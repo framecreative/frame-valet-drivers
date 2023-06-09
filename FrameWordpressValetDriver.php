@@ -1,6 +1,10 @@
 <?php
 
-class FrameWordPressValetDriver extends BasicValetDriver
+namespace Valet\Drivers\Custom;
+
+use Valet\Drivers\ValetDriver;
+
+class FrameWordPressValetDriver extends ValetDriver
 {
 
     public $wp_root = 'wordpress';
@@ -15,7 +19,7 @@ class FrameWordPressValetDriver extends BasicValetDriver
      * @param  string  $uri
      * @return bool
      */
-    public function serves($sitePath, $siteName, $uri)
+    public function serves(string $sitePath, string $siteName, string $uri): bool
     {   
         if (file_exists($sitePath.'/site/wp-config.php') || file_exists($sitePath.'/site/wp-config-sample.php'))
         {
@@ -46,7 +50,7 @@ class FrameWordPressValetDriver extends BasicValetDriver
      * @param  string  $uri
      * @return string
      */
-    public function frontControllerPath($sitePath, $siteName, $uri)
+    public function frontControllerPath(string $sitePath, string $siteName, string $uri): string
     {
 
         if ( $this->debug ){
@@ -176,7 +180,7 @@ class FrameWordPressValetDriver extends BasicValetDriver
     }
 
     
-    public function isStaticFile($sitePath, $siteName, $uri)
+    public function isStaticFile(string $sitePath, string $siteName, string $uri)/*: string|false */
     {
         $sitePath = $sitePath . $this->public_dir;
         // If the URI contains one of the main WordPress directories and it doesn't end with a slash,
