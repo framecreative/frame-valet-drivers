@@ -2,9 +2,9 @@
 
 namespace Valet\Drivers\Custom;
 
-use Valet\Drivers\ValetDriver;
+use Valet\Drivers\BasicValetDriver;
 
-class FrameWordPressValetDriver extends ValetDriver
+class FrameWordPressValetDriver extends BasicValetDriver
 {
 
     public $wp_root = 'wordpress';
