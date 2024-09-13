@@ -4,12 +4,47 @@ namespace Valet\Drivers\Custom;
 
 use Valet\Drivers\BasicValetDriver;
 
+/**
+ * FrameWordPressValetDriver 
+ * 
+ * Handles the serving of WordPress from a subdirectory, along with
+ * the web root being in subfolder of the project.
+ * 
+ * Designed to match the conventions Frame utilise for their WordPress
+ * projects, including the 'MainFrame' framwork.
+ * 
+ * Current Version: 1.1.0
+ * 
+ */
+
 class FrameWordPressValetDriver extends BasicValetDriver
 {
+    /**
+     * @var string $wp_root
+     */
+    private $wp_root = '';
 
-    public $wp_root = 'wordpress';
-    public $public_dir = '';
-    public $debug = false;
+    /**
+     * @var string $public_dir
+     */
+    private $public_dir = '';
+
+    /**
+     * @var bool $debug
+     */
+    private $debug = false;
+
+    private $possible_web_roots = [
+        'site',
+        'public',
+        'dist',
+    ];
+
+    private $possible_wp_roots = [
+        'wordpress',
+        'wp',
+        'cms',
+    ];
 
     /**
      * Determine if the driver serves the request.
@@ -21,25 +56,25 @@ class FrameWordPressValetDriver extends BasicValetDriver
      */
     public function serves(string $sitePath, string $siteName, string $uri): bool
     {   
-        if (file_exists($sitePath.'/site/wp-config.php') || file_exists($sitePath.'/site/wp-config-sample.php'))
-        {
-            $this->public_dir = '/site';
-            return true;
+        $matches = false;
+
+        foreach($this->possible_web_roots as $folder){
+            if (!file_exists($sitePath.'/' . $folder . '/wp-config.php') && !file_exists($sitePath.'/' . $folder . '/wp-config-sample.php')) continue;
+            $this->public_dir = $folder;
+            $matches = true;
+            break;
         }
 
-        if (file_exists($sitePath.'/dist/wp-config.php') || file_exists($sitePath.'/dist/wp-config-sample.php'))
-        {
-            $this->public_dir = '/dist';
-            return true;
-        }
+        if (!$matches) return false;
 
-        if (file_exists($sitePath.'/wp-config.php') || file_exists($sitePath.'/wp-config-sample.php'))
-        {
-            $this->public_dir = '';
-            return true;
+        foreach($this->possible_wp_roots as $folder){
+            $path = $sitePath . '/' . $this->public_dir . '/' . $folder . '/wp-load.php';
+            if (!file_exists($path))continue;
+            $this->wp_root = $folder;
+            break;
         }
-
-        return false;
+        
+        return true;
     }
 
     /**
@@ -61,7 +96,7 @@ class FrameWordPressValetDriver extends BasicValetDriver
             echo PHP_EOL . '----------------------------------------------' . PHP_EOL;
         }
 
-        $sitePath = $sitePath . $this->public_dir;
+        $sitePath = $sitePath . '/' . $this->public_dir;
 
         $multisiteRegex = $re = '/^define\( ?\'MULTISITE\' ?, ?true ?\)/m';
         @$isMulti = preg_match( $multisiteRegex, file_get_contents($sitePath . '/wp-config.php'), $matches );
@@ -182,9 +217,12 @@ class FrameWordPressValetDriver extends BasicValetDriver
     
     public function isStaticFile(string $sitePath, string $siteName, string $uri)/*: string|false */
     {
-        $sitePath = $sitePath . $this->public_dir;
+
+        $sitePath = $sitePath . '/' . $this->public_dir;
         // If the URI contains one of the main WordPress directories and it doesn't end with a slash,
         // drop the subdirectory from the URI and check if the file exists. If it does, return the new uri.
+
+
         if ( stripos($uri, 'wp-admin') !== false || stripos($uri, 'wp-content') !== false || stripos($uri, 'wp-includes') !== false ) {
             if ( substr($uri, -1, 1) == "/" ) return false;
 
@@ -193,6 +231,8 @@ class FrameWordPressValetDriver extends BasicValetDriver
             if ( $this->wp_root !== false && file_exists($sitePath . "/{$this->wp_root}/wp-admin") ) {
                 $new_uri = "/{$this->wp_root}" . $new_uri;
             }
+
+
 
             if ( file_exists( $sitePath . $new_uri ) ) {
                 return $sitePath . $new_uri;
